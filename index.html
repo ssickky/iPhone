@@ -7697,7 +7697,9 @@ function gInit(id,el){
       const C=document.createElement('div'); C.className='igc'; el.appendChild(C);
       const X24=`<svg width="24" height="24" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>`;
       const W=(p,w=24)=>igI(p,w,'style="stroke:#fff"');
-      const wireMeAv=()=>{ el.querySelectorAll('.ig-mav .ig-av').forEach(x=>{ if(x._myw) return; x._myw=1; x.style.cursor='pointer'; x.addEventListener('click',e=>{ if(!(M.posted>=0&&!IG_STORIES[M.posted].gone)) return; e.stopPropagation(); openS([M.posted],0,x); }); }); };
+      const wireMeAv=()=>{ el.querySelectorAll('.ig-mav .ig-av').forEach(x=>{ if(x._myw) return; x._myw=1; x.style.cursor='pointer'; x.addEventListener('click',e=>{ if(!(M.posted>=0&&!IG_STORIES[M.posted].gone)) return; e.stopPropagation(); openS([M.posted],0,x); }); });
+        /* 내 프로필 사진 오른쪽 아래 + 버튼으로도 스토리 추가 (홈 '내 스토리'와 같은 과정) */
+        el.querySelectorAll('.ig-mav .pl').forEach(b=>{ if(b._myw) return; b._myw=1; b.style.cursor='pointer'; b.addEventListener('click',e=>{ e.stopPropagation(); if(M.armed&&!M.done&&!(M.posted>=0&&!IG_STORIES[M.posted].gone)) openGal(); }); }); };
       { const r0=el._meRefresh; el._meRefresh=()=>{ r0(); wireMeAv(); if(M.posted>=0&&!IG_STORIES[M.posted].gone) el.querySelectorAll('.ig-av[data-ap="me"]').forEach(x=>{ if(x.closest('.ig-st')) return; x.classList.add('ring'); x.classList.toggle('seen',!!IG_SEEN.me); }); }; }
       wireMeAv();
       const trayLive=()=>{ wireMeAv(); const r=ME.querySelector('.ig-sr'); r.classList.remove('up'); r.classList.add('live'); r.classList.toggle('seen',!!IG_SEEN.me);
@@ -8460,7 +8462,11 @@ date:`<div class="gp-u">지방에서 남자친구 올라오는데 서울 데이�
         el.classList.remove('c2rec'); V.done=1; CAMAPP.done=1; clearInterval(rT); savePhoto(V.poster,{video:V.mp4,dur:V.dur});
         setTimeout(()=>{ if(rv){ rv.pause(); rv.removeAttribute('src'); try{ rv.load(); }catch(err){} rv.remove(); rv=null; } },350);
         try{ V.onDone&&V.onDone(); }catch(err){ console.error(err); } },true); }
-    el.querySelector('.c2-shut').addEventListener('click',()=>{ const sh=el.querySelector('.c2-shut'); if(!CAMAPP.enabled||CAMAPP.shots<=0||sh.classList.contains('vid')) return; if(--CAMAPP.shots<=0) CAMAPP.enabled=false; sh.style.transform='scale(.9)'; setTimeout(()=>sh.style.transform='',120);
+    /* 사진 촬영 이벤트가 걸려 있으면: 카메라를 열 때 '사진' 모드로 맞추고, 비디오 계열 모드에서 눌러도 사진 모드로 바꿔 촬영 */
+    const toPhoto=()=>{ const sp=RL.querySelector('[data-m="photo"]'); if(sp&&!sp.classList.contains('on')){ RL.querySelectorAll('span').forEach(x=>x.classList.toggle('on',x===sp)); place(); } };
+    const photoArmed=()=>CAMAPP.enabled&&CAMAPP.shots>0&&!(CAMAPP.video&&!CAMAPP.video.done);
+    { const oo2=el._onOpen; el._onOpen=()=>{ oo2&&oo2(); if(photoArmed()) toPhoto(); }; }
+    el.querySelector('.c2-shut').addEventListener('click',()=>{ const sh=el.querySelector('.c2-shut'); if(!CAMAPP.enabled||CAMAPP.shots<=0) return; if(sh.classList.contains('vid')){ if(CAMAPP.video&&!CAMAPP.video.done) return; toPhoto(); } if(--CAMAPP.shots<=0) CAMAPP.enabled=false; sh.style.transform='scale(.9)'; setTimeout(()=>sh.style.transform='',120);
       if(CAMAPP.img) savePhoto(CAMAPP.img); else try{ const c=document.createElement('canvas'); c.width=vid.videoWidth||720; c.height=vid.videoHeight||1280; c.getContext('2d').drawImage(vid,0,0,c.width,c.height); savePhoto(c.toDataURL('image/jpeg',.85)); }
       catch(e){ savePhoto(CAMAPP.fallback); }
       if(CAMAPP.img) CAMAPP.done=1; /* 정해진 장면을 찍고 나면, 앱을 닫을 때 기본 영상으로 */
