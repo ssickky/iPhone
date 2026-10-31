@@ -6171,9 +6171,10 @@ const PSHARE=(()=>{ let busy=0;
   const avOf=p=>{ const f=p[0]&&fr(p[0]); if(f&&f.img) return `<span class="a" style="background-image:url('${f.img}')"><i class="sb${p[2]==='kt'?'k':'m'}">${p[2]==='kt'?KT:MS}</i></span>`;
     return `<span class="a ini">${p[1][0]}<i class="sb${p[2]==='kt'?'k':'m'}">${p[2]==='kt'?KT:MS}</i></span>`; };
   const bg=(i,full)=>{ const Q=PHOTOS[i]; return !Q?'#ddd':Q[0]==='WALL'?`${WALL_HOME} center/cover`:(full?Q[0]:thb(Q[0])); };
+  let curS=null;
   const api={ armed:0, done:0,
-    can(i){ return this.armed&&!this.done&&!busy&&PHOTOS[i]&&String(PHOTOS[i][0]).includes('n14.jpg'); },
-    open(el,i){ busy=1; let S=el.querySelector('.shs'); if(S) S.remove(); S=document.createElement('div'); S.className='shs';
+    can(i){ if(busy&&!(curS&&curS.isConnected)&&!this.sending) busy=0; return this.armed&&!this.done&&!busy&&PHOTOS[i]&&String(PHOTOS[i][0]).includes('n14.jpg'); },
+    open(el,i){ busy=1; let S=el.querySelector('.shs'); if(S) S.remove(); S=document.createElement('div'); S.className='shs'; curS=S;
       S.innerHTML=`<div class="dim"></div><div class="sh"><div class="sc">
         <div class="car"><i class="l" style="background:${bg(i-1)}"><s></s></i><i class="c" style="background:${bg(i,1)}"><s><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.5 6.3l2.3 2.3 4.7-5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></s>${PHOTOS[i][7]?'<em>♥</em>':''}</i><i class="r" style="background:${bg(i+1)}"><s></s></i></div>
         <div class="ppl">${P.map(()=>'<div class="pp sk"><span class="a"></span><small></small></div>').join('')}</div><div class="ln"></div>
@@ -6186,15 +6187,20 @@ const PSHARE=(()=>{ let busy=0;
       /* 잠깐 뒤 대화 상대 목록이 채워짐 (맨 앞: 동현이 카톡) */
       setTimeout(()=>{ const pp=S.querySelector('.ppl'); pp.innerHTML=P.map((p,k)=>`<div class="pp${k===0?' go':''}">${avOf(p)}<span>${p[1]}</span></div>`).join('');
         pp.querySelector('.go').addEventListener('click',e=>{ e.stopPropagation(); api.send(S); }); },550);
-      S.addEventListener('pointerdown',e=>e.stopPropagation()); },
-    send(S){ if(this.done) return; this.done=1; buzz(8); const H=S.querySelector('.hud'); H.classList.add('on');
+      S.addEventListener('pointerdown',e=>e.stopPropagation());
+      /* 닫기(X·바깥 어두운 곳): 시트를 닫고 다시 공유할 수 있게 */
+      const shut=e=>{ e.stopPropagation(); if(api.sending||api.done) return; S.classList.remove('on'); setTimeout(()=>{ S.remove(); busy=0; },300); };
+      S.querySelector('.hd .x').addEventListener('click',shut); S.querySelector('.dim').addEventListener('click',shut);
+      /* 앱 줄의 '카카오톡'을 눌러도 동현이 카톡방으로 전송 */
+      S.querySelectorAll('.apps .ap').forEach(a=>{ if(a.textContent.includes('카카오톡')) a.addEventListener('click',e=>{ e.stopPropagation(); api.send(S); }); }); },
+    send(S){ if(this.done) return; this.done=1; this.sending=1; buzz(8); const H=S.querySelector('.hud'); H.classList.add('on');
       setTimeout(()=>{ H.classList.add('ok'); H.querySelector('.hm').textContent='전송 완료'; buzz([20]);
         /* 동현이 카톡방에 사진 전송(방은 열지 않음, 안 읽음) */
         try{ const m={id:++mid,from:'me',text:'',ts:storyNow(),read:false,type:'img',src:'n14'}; chats.dh.msgs.push(m); if(kakao.classList.contains('open')&&!kroom.classList.contains('on')) renderChats(); }catch(e){ console.error(e); }
         KAKAO_SCRIPT.dh=[['me','이거 1년 됐대'],['me','길러서금발하지 하…']]; delete KAKAO_SCRIPT_AFTER.dh; KGD.fin.dh=0; window.KT_NOREAD=Object.assign(window.KT_NOREAD||{},{dh:1});
         KAKAO_SCRIPT_END.dh=()=>{ if(window.EV) EV.chatDone('kt:dh:year'); };
         try{ if(room==='dh'&&kroom.classList.contains('on')){ KGD.check('dh'); if(KGD.on()) KGD.draw(); } }catch(e){}
-        setTimeout(()=>{ H.classList.remove('on'); S.classList.remove('on'); setTimeout(()=>{ S.remove(); busy=0; },450); },1100); },1000); } };
+        setTimeout(()=>{ H.classList.remove('on'); S.classList.remove('on'); setTimeout(()=>{ S.remove(); busy=0; api.sending=0; },450); },1100); },1000); } };
   return api; })();
 window.PSHARE=PSHARE;
 /* 17~18일: 김운학 카톡 → 동현이 연락 두절 눈치 (KT1718.step1~4) */
