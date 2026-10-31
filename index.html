@@ -7560,7 +7560,7 @@ function gInit(id,el){
     const startBar=()=>{ const b=face.querySelector('.ig-sbar i.cur b'); b.classList.remove('r'); void b.offsetWidth; b.classList.add('r'); b.style.animationPlayState='running'; };
     const runT=ms=>{ clearTimeout(sT); sStart=Date.now(); sLeft=ms; sT=setTimeout(()=>{ if(S.classList.contains('on')&&!busy) go(1); },ms); };
     const activate=()=>{ markSeen(+face.dataset.i); startBar(); runT(5000); };
-    const pauseS=()=>{ try{ face&&face.querySelectorAll('video').forEach(v=>v.pause()); }catch(e){} clearTimeout(sT); sLeft=Math.max(300,sLeft-(Date.now()-sStart)); const b=face&&face.querySelector('.ig-sbar i.cur b'); if(b) b.style.animationPlayState='paused'; };
+    const pauseS=()=>{ try{ face&&face.querySelectorAll('video').forEach(v=>v.pause()); }catch(e){} if(sT){ clearTimeout(sT); sT=null; sLeft=Math.max(300,sLeft-(Date.now()-sStart)); } const b=face&&face.querySelector('.ig-sbar i.cur b'); if(b) b.style.animationPlayState='paused'; };
     const resumeS=()=>{ if(!S.classList.contains('on')||!face) return; try{ face.querySelectorAll('video').forEach(v=>{ const p=v.play(); if(p&&p.catch) p.catch(()=>{}); }); }catch(e){} const b=face.querySelector('.ig-sbar i.cur b'); if(b) b.style.animationPlayState='running'; runT(sLeft); };
     /* 큐브: p 0→1, dir 1=다음(왼쪽으로 회전) -1=이전 */
     const setCube=(cur,nb,p,dir)=>{ const q=1-p;
@@ -7774,7 +7774,14 @@ function gInit(id,el){
     el._closeS=()=>{ if(!S.classList.contains('on')) return 0; endReply(); closeS(); return 1; };
     el._storyVia=k=>{ if(CH.classList.contains('on')) CH.querySelector('.b').click(); PV.classList.remove('on'); tab('home'); setTimeout(()=>{ openP(k); setTimeout(()=>{ const av=PR.querySelector('.ig-pf .ig-av[data-ap]'); if(av){ av.classList.add('tap'); setTimeout(()=>{ av.classList.remove('tap'); av.click(); },180); } },650); },250); };
     const endReply=()=>{ skb.close(); skb.clear(); S.classList.remove('kb'); SE.classList.remove('on'); sdraw(''); };
-    S.addEventListener('pointerdown',e=>{ if(S.classList.contains('kb')&&!SE.classList.contains('on')&&!e.target.closest('.kbd,.ig-sin')){ e.stopPropagation(); endReply(); resumeS(); } },true);
+    /* 답장 키보드가 열린 상태의 터치: 좌표로 판정(아이폰에서 3D 스토리 화면의 터치 대상이 어긋나는 경우 대비)
+       '보내기' 근처 → 바로 전송 / 입력칸·키보드 → 그대로 / 그 밖 → 답장 닫기 */
+    S.addEventListener('pointerdown',e=>{ if(!S.classList.contains('kb')||SE.classList.contains('on')) return;
+      const inR=(x,pad)=>{ if(!x) return false; const r=x.getBoundingClientRect(); if(!r.width) return false; const q=pad*(typeof scale==='number'?scale:1); return e.clientX>=r.left-q&&e.clientX<=r.right+q&&e.clientY>=r.top-q&&e.clientY<=r.bottom+q; };
+      const sin=face&&face.querySelector('.ig-sin'), sx=sin&&sin.querySelector('.sendx');
+      if(sin&&sin.classList.contains('rdy')&&inR(sx,22)){ e.stopPropagation(); e.preventDefault(); SR.send(); return; }
+      if(e.target.closest('.kbd,.ig-sin')||inR(sin,10)||inR(S.querySelector('.kbd.vk.on')||S.querySelector('.kbd.vk'),0)) return;
+      e.stopPropagation(); endReply(); resumeS(); },true);
     SE.addEventListener('click',e=>{ const em=e.target.closest('.ig-semo i'); skb.close(); skb.clear(); SE.classList.remove('on'); S.classList.remove('kb'); sdraw('');
       if(em){ for(let k=0;k<7;k++){ const f=document.createElement('b'); f.className='ig-fly'; f.textContent=em.textContent; f.style.left=(30+Math.random()*40)+'%'; f.style.animationDelay=(k*70)+'ms'; f.style.fontSize=(34+Math.random()*24)+'px'; S.appendChild(f); setTimeout(()=>f.remove(),1800); } buzz(10); setTimeout(resumeS,1300); } else resumeS(); });
     /* DM */
