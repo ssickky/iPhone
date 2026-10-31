@@ -5221,7 +5221,7 @@ const GIFT_SCRIPT=[
 <p>💡 신발은 사이즈가 중요하니까, 평소 신는 사이즈를 꼭 확인하고 주문하세요!</p>`,{load:1800}]
 ];
 const GPTEV={armed:false,done:false,saved:false,onSaved(){ try{ window.__KGD().release('selfie'); }catch(e){} },photo:null,reply:'media/gp_fix.jpg',text:'안 부어보이게 보정해줘',onDone:null,arm(photo,onDone){ this.armed=true; this.photo=photo; this.onDone=onDone||null; }}; window.GPTEV=GPTEV;
-const CAMAPP={enabled:false,shots:0,img:null,arm(n=1,onShot){ this.enabled=true; this.shots=n; this.onShot=onShot||null; },view(url){ this.img=url||null; try{ this.sync&&this.sync(); }catch(e){} },fallback:'media/camlive_hq.jpg'}; window.CAMAPP=CAMAPP; window.__PH=()=>PHOTOS;
+const CAMAPP={enabled:false,shots:0,img:null,arm(n=1,onShot){ this.enabled=true; this.shots=n; this.onShot=onShot||null; },view(url){ this.img=url||null; this._vt=(this._vt||0)+1; if(url) this.done=0; try{ this.sync&&this.sync(); }catch(e){} },fallback:'media/camlive_hq.jpg'}; window.CAMAPP=CAMAPP; window.__PH=()=>PHOTOS;
 function savePhoto(url,o={}){ const d=new Date(storyNow()), p=n=>String(n).padStart(2,'0');
   PHOTOS.push([`url('${url}') center/cover`,'','',o.dur||'',o.video||'',0,`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`,0]);
   try{ photosChanged(); }catch(e){}
@@ -7555,7 +7555,8 @@ function gInit(id,el){
     const rmF=f=>{ try{ f.querySelectorAll('video').forEach(v=>v.pause()); }catch(e){} f.remove(); };
     const mkFace=i=>{ const t=document.createElement('div'); t.innerHTML=faceHTML(i); const f=t.firstElementChild; CU.appendChild(f); const v=f.querySelector('video'); if(v){ try{ window.MUSIC_YIELD&&MUSIC_YIELD(); }catch(e){} const p=v.play(); if(p&&p.catch) p.catch(()=>{ v.muted=true; v.play().catch(()=>{}); }); } return f; };
     const liveOf=k=>IG_STORIES.map((s,j)=>s.a===k&&!s.gone?j:-1).filter(j=>j>=0);
-    const firstUn=l=>Math.max(0,l.findIndex(j=>!IG_STORIES[j].seen));
+    /* 안 본 스토리부터. 다 봤으면, 아직 보내지 않은 정해진 답장이 걸린 스토리부터 */
+    const firstUn=l=>{ const u=l.findIndex(j=>!IG_STORIES[j].seen); if(u>=0) return u; const R2=window.IG_REPLY; const r=R2&&!R2.sent?l.indexOf(R2.i):-1; return Math.max(0,r); };
     const markSeen=i=>{ if(IG_STORIES[i].a==='me'){ const r=el.querySelector('.ig-st [data-s="me"] .ig-sr'); if(r) r.classList.add('seen'); el.querySelectorAll('.ig-av.ring[data-ap="me"]').forEach(x=>x.classList.add('seen')); }
       const k=IG_STORIES[i].a, first=!IG_STORIES[i].seen; IG_STORIES[i].seen=1; const all=liveOf(k).every(j=>IG_STORIES[j].seen); IG_SEEN[k]=all?1:0;
       if(all){ el.querySelectorAll(`.ig-av.ring[data-ap="${k}"]`).forEach(x=>x.classList.add('seen'));
@@ -7627,7 +7628,7 @@ function gInit(id,el){
       if(e.target.closest('.ig-mybar .act')){ e.stopPropagation(); el._myAct&&el._myAct(); return; }
       if(e.target.closest('.ig-shd .x')){ e.stopPropagation(); closeS(); return; }
       const sh=e.target.closest('.ig-sin .sh'); if(sh){ sh.classList.toggle('on'); try{ if(sh.classList.contains('on')&&face) window.IG_ONHEART&&IG_ONHEART(+face.dataset.i); }catch(err){} if(sh.classList.contains('on')){ sh.classList.remove('pop'); void sh.offsetWidth; sh.classList.add('pop'); } buzz(8); return; }
-      if(e.target.closest('.ig-sin .in')){ if(S.classList.contains('kb')||(face&&IG_STORIES[+face.dataset.i].noReply)) return; pauseS(); SE.classList.add('on'); S.classList.add('kb'); skb.clear(); skb.open(); sdraw(''); return; }
+      if(e.target.closest('.ig-sin .in')){ if(S.classList.contains('kb')||(face&&IG_STORIES[+face.dataset.i].noReply)) return; pauseS(); try{ SR.reset(); }catch(err){} SE.classList.add('on'); S.classList.add('kb'); skb.clear(); skb.open(); sdraw(''); return; }
       if(e.target.closest('.ig-shd b,.ig-shd .av')&&face){ const k=IG_STORIES[+face.dataset.i].a; closeS(); setTimeout(()=>openP(k),300); } });
     /* 스토리 답장: 휴대폰 키보드로 타자, 전송은 비활성 */
     const sdraw=t=>{ if(!face||!face.querySelector('.ig-sin')) return; const IN=face.querySelector('.ig-sin .in'), on=S.classList.contains('kb'); IN.innerHTML=(t?`<span>${t.replace(/ /g,'&nbsp;')}</span>`:(on?'':'메시지 보내기...'))+(on?'<i class="vcaret" style="background:#fff"></i>':''); IN.classList.toggle('v',!!t); face.querySelector('.ig-sin').classList.toggle('typed',!!t); SE.classList.toggle('on',on&&!t); };
@@ -7644,7 +7645,9 @@ function gInit(id,el){
       const send=()=>{ if(!on()||!T||st<T.steps.length) return; const R2=IG_REPLY; R2.sent=1; T=null; st=0; const fc=face; endReply(); fc.querySelector('.ig-sin').classList.remove('rdy');
         const sent=document.createElement('div'); sent.className='ig-ssent'; sent.textContent='보냄'; fc.appendChild(sent); setTimeout(()=>sent.remove(),1400); buzz(8);
         try{ R2.onSend&&R2.onSend(); }catch(e){ console.error(e); } setTimeout(resumeS,600); };
-      return { key, send };
+      /* 답장 창을 닫으면 입력 상태를 처음으로 되돌림(다시 열면 처음부터 다시 칠 수 있게) */
+      const reset=()=>{ if(anim){ clearInterval(anim); anim=null; } T=null; st=0; goal=0; };
+      return { key, send, reset };
     })();
     S.addEventListener('click',e=>{ if(e.target.closest('.ig-sin .sendx')){ e.stopPropagation(); SR.send(); } },true);
     /* 새 스토리 추가(앱이 이미 열려 있어도 상단 목록·프로필 테두리에 바로 반영) */
@@ -7779,7 +7782,7 @@ function gInit(id,el){
           box.appendChild(h); setTimeout(()=>h.remove(),2600); } },380); }
     el._closeS=()=>{ if(!S.classList.contains('on')) return 0; endReply(); closeS(); return 1; };
     el._storyVia=k=>{ if(CH.classList.contains('on')) CH.querySelector('.b').click(); PV.classList.remove('on'); tab('home'); setTimeout(()=>{ openP(k); setTimeout(()=>{ const av=PR.querySelector('.ig-pf .ig-av[data-ap]'); if(av){ av.classList.add('tap'); setTimeout(()=>{ av.classList.remove('tap'); av.click(); },180); } },650); },250); };
-    const endReply=()=>{ skb.close(); skb.clear(); S.classList.remove('kb'); SE.classList.remove('on'); sdraw(''); };
+    const endReply=()=>{ try{ SR.reset(); }catch(e){} try{ S.querySelectorAll('.ig-sin.rdy').forEach(x=>x.classList.remove('rdy')); }catch(e){} skb.close(); skb.clear(); S.classList.remove('kb'); SE.classList.remove('on'); sdraw(''); };
     /* 답장 키보드가 열린 상태의 터치: 좌표로 판정(아이폰에서 3D 스토리 화면의 터치 대상이 어긋나는 경우 대비)
        '보내기' 근처 → 바로 전송 / 입력칸·키보드 → 그대로 / 그 밖 → 답장 닫기 */
     S.addEventListener('pointerdown',e=>{ if(!S.classList.contains('kb')||SE.classList.contains('on')) return;
@@ -8655,7 +8658,7 @@ function gOpen(id,icon){
   if(el._onOpen) el._onOpen();
 }
 function gClose(id){ const el=gEls[id]; if(!el) return;
-  if(id==='cam'&&CAMAPP.done){ CAMAPP.done=0; setTimeout(()=>{ try{ CAMAPP.view(null); }catch(e){} },400); }
+  if(id==='cam'&&CAMAPP.done){ CAMAPP.done=0; const vt=CAMAPP._vt; setTimeout(()=>{ try{ if(CAMAPP._vt===vt&&!(CAMAPP.enabled&&CAMAPP.shots>0)) CAMAPP.view(null); }catch(e){} },400); }
   /* 닫힌 앱의 동영상은 버퍼를 비워 메모리 확보 (다시 열 때 복구) */
   /* 닫힌 앱은 화면에서 완전히 빼 둠(display:none) → 그 안의 큰 사진들을 메모리에서 내려놓을 수 있게 */
   clearTimeout(el._gz); el._gz=setTimeout(()=>{ if(!el.classList.contains('open')) el.style.display='none'; },700);
